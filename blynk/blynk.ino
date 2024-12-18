@@ -100,7 +100,6 @@ void setup() {
   }
   Serial.println("\nConnected to Wi-Fi");
 
-  Serial.println("Begginging Ring");
   ring.begin();
   ring.show();
   ring.setBrightness(50);
