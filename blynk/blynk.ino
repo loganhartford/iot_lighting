@@ -17,6 +17,12 @@ enum Mode {
   CANDLE,
 };
 
+#include <Adafruit_NeoPixel.h>
+#define LED_PIN 2
+#define NUM_LEDS 16
+
+Adafruit_NeoPixel ring(NUM_LEDS, LED_PIN, NEO_RGBW + NEO_KHZ800);
+
 int mode = 0;
 int brightness = 0;
 int speed = 0;
@@ -93,6 +99,11 @@ void setup() {
     yield();
   }
   Serial.println("\nConnected to Wi-Fi");
+
+  Serial.println("Begginging Ring");
+  ring.begin();
+  ring.show();
+  ring.setBrightness(50);
 }
 
 void loop() {
