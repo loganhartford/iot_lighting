@@ -19,8 +19,9 @@ enum Mode {
 };
 
 #include <Adafruit_NeoPixel.h>
-#define LED_PIN 2
+#define LED_PIN 4
 #define NUM_LEDS 16
+#define ESP_LED 2
 
 Adafruit_NeoPixel ring(NUM_LEDS, LED_PIN, NEO_RGB + NEO_KHZ800);
 
@@ -32,11 +33,14 @@ uint8_t green = 0;
 uint8_t blue = 0;
 int colorIndex = 0;
 
+bool connected = false;
+#define CONNECT_THRESH 20
+
 // Brightness
 BLYNK_WRITE(V0)
 {
   brightness = (uint8_t)param.asInt();
-  brightness = brightness * 10;
+  brightness = brightness * 25.5;
 
   Serial.print("Brightness is: ");
   Serial.println(brightness);
@@ -105,15 +109,33 @@ void updateRingColor() {
       break;
 
     case CANDLE: {
-      static float smoothBrightness = brightness; 
-      float target = brightness - 20 + random(40); 
-      if (target < 0) target = 0;
-      if (target > 255) target = 255;
-
+      static float smoothBrightness = brightness;
+      
+      // Define flicker range as a fraction of current brightness
+      float flickerRange = brightness * 0.2; // 20% of brightness
+      
+      // Ensure some minimum flicker when brightness is low
+      if (flickerRange < 10) {
+        flickerRange = 10;
+      }
+      
+      // Calculate min/max target
+      float minTarget = brightness - flickerRange;
+      float maxTarget = brightness + flickerRange;
+      
+      // Clamp to valid brightness range
+      if (minTarget < 0)   minTarget = 0;
+      if (maxTarget > 255) maxTarget = 255;
+      
+      // Pick a random target within flicker range
+      float target = random((int)minTarget, (int)maxTarget + 1);
+      
+      // Smooth transition
       smoothBrightness = smoothBrightness * 0.9 + target * 0.1;
-
+      
+      // Set candle color (adjust as desired)
       for (int i = 0; i < ring.numPixels(); i++) {
-        ring.setPixelColor(i, 95, 180, 0);
+        ring.setPixelColor(i, 95, 180, 0); 
       }
       ring.setBrightness((uint8_t)smoothBrightness);
       break;
@@ -145,21 +167,43 @@ void setup() {
   WiFi.begin(ssid, pass);
 
   // Wait for Wi-Fi to connect
-  while (WiFi.status() != WL_CONNECTED) {
+  int connect_count = 0;
+  while ((WiFi.status() != WL_CONNECTED) && (connect_count < CONNECT_THRESH)) {
     delay(500);
     Serial.print(".");
+    connect_count++;
     yield();
   }
-  Serial.println("\nConnected to Wi-Fi");
+
+  if (connect_count < CONNECT_THRESH) {
+    Serial.println("\nConnected to Wi-Fi");
+    connected = true;
+    Blynk.syncAll();
+  }
+  else {
+    Serial.println("\nFailed to connect to Wi-Fi, entering default mode.");
+    connected = false;
+    mode = DISCO;
+    brightness = 0;
+    speed = 5;
+  }
 
   ring.begin();
   ring.show();
 
-  Blynk.syncAll();
+  // Set on-board leds
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(ESP_LED, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(ESP_LED, HIGH);
 }
 
 void loop() {
-  Blynk.run();
+  if (connected)
+  {
+    Blynk.run();
+  }
+
   updateRingColor();
   if (mode == CANDLE)
   {
