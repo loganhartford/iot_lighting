@@ -9,7 +9,7 @@
 #include <string.h>
 
 char ssid[] = "LoganWifi";
-char pass[] = "logan123";
+char pass[] = "logan13";
 
 enum Mode {
   MANUAL,
@@ -161,6 +161,9 @@ void updateRingColor() {
 
 void setup() {
   Serial.begin(115200);
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(ESP_LED, OUTPUT);
   
   WiFi.mode(WIFI_STA);
   Blynk.config(BLYNK_AUTH_TOKEN, "blynk.cloud", 80);
@@ -171,6 +174,7 @@ void setup() {
   while ((WiFi.status() != WL_CONNECTED) && (connect_count < CONNECT_THRESH)) {
     delay(500);
     Serial.print(".");
+    digitalWrite(LED_BUILTIN, (connect_count % 2));
     connect_count++;
     yield();
   }
@@ -179,23 +183,23 @@ void setup() {
     Serial.println("\nConnected to Wi-Fi");
     connected = true;
     Blynk.syncAll();
+    // Off
+    digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(ESP_LED, HIGH);
   }
   else {
     Serial.println("\nFailed to connect to Wi-Fi, entering default mode.");
     connected = false;
     mode = DISCO;
-    brightness = 0;
+    brightness = 50; // 0-255
     speed = 5;
+    // One on
+    digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(ESP_LED, LOW);
   }
 
   ring.begin();
   ring.show();
-
-  // Set on-board leds
-  pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(ESP_LED, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
-  digitalWrite(ESP_LED, HIGH);
 }
 
 void loop() {
