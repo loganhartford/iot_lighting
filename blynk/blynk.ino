@@ -9,7 +9,7 @@
 #include <string.h>
 
 char ssid[] = "LoganWifi";
-char pass[] = "logan13";
+char pass[] = "logan123";
 
 enum Mode {
   MANUAL,
@@ -181,18 +181,25 @@ void setup() {
 
   if (connect_count < CONNECT_THRESH) {
     Serial.println("\nConnected to Wi-Fi");
-    connected = true;
     Blynk.syncAll();
+
+    connected = true;
+    mode = CANDLE;
+    brightness = 50; // 0-255
+    speed = 5;
+
     // Off
     digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(ESP_LED, HIGH);
   }
   else {
     Serial.println("\nFailed to connect to Wi-Fi, entering default mode.");
+
     connected = false;
-    mode = DISCO;
+    mode = CANDLE;
     brightness = 50; // 0-255
     speed = 5;
+    
     // One on
     digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(ESP_LED, LOW);
